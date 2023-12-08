@@ -1,7 +1,4 @@
 #include <stdint.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <unistd.h>
 
 #define OP_SET  0x00
 #define OP_ADD  0x01
@@ -16,7 +13,7 @@ typedef struct {
     uint8_t op;
     uint8_t value;
     uint16_t shift;
-    uint32_t jump;
+    int32_t jump;
 } VmCommand;
 
 void run(VmCommand *commands);

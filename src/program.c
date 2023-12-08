@@ -1,7 +1,18 @@
 #include "program.h"
 
+static const size_t WEIGHT[] = {
+    9,  // OP_SET
+    9,  // OP_ADD
+    13, // OP_MULL
+    17, // OP_JRZ
+    15, // OP_JRNZ
+    20, // OP_PUTC
+    20, // OP_GETC
+    16, // OP_END
+};
+
 Program program_init() {
-    Program program = { .length = 0, .capacity = 8, .commands = malloc(8 * sizeof(VmCommand)) };
+    Program program = { .length = 0, .capacity = 8, .weight = 0, .commands = malloc(8 * sizeof(VmCommand)) };
     return program;
 }
 
@@ -16,6 +27,7 @@ void program_concat(Program *program, Program subprog) {
     }
     memcpy(&program->commands[program->length], subprog.commands, subprog.length * sizeof(VmCommand));
     program->length += subprog.length;
+    program->weight += subprog.weight;
 }
 
 void program_append(Program *program, VmCommand command) {
@@ -25,4 +37,5 @@ void program_append(Program *program, VmCommand command) {
     }
     program->commands[program->length] = command;
     program->length++;
+    program->weight += WEIGHT[command.op];
 }

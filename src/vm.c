@@ -1,3 +1,7 @@
+#include <stdlib.h>
+#include <stdio.h>
+#include <unistd.h>
+
 #include "vm.h"
 
 #define vm_op(op) label_##op:
@@ -49,13 +53,13 @@ void run(VmCommand *commands) {
 
     vm_op(OP_JRNZ) {
         if(tape[pointer] != 0) {
-            commands -= command.jump;
+            commands += command.jump;
         }
         vm_next();
     }
 
     vm_op(OP_PUTC) {
-        putchar(tape[pointer]);
+        write(STDOUT_FILENO, &tape[pointer], 1);
         vm_next();
     }
 

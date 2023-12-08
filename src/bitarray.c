@@ -1,3 +1,5 @@
+#include <string.h>
+
 #include "bitarray.h"
 
 BitArray bitarray_init() {

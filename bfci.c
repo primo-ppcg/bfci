@@ -1,3 +1,8 @@
+#include <stdio.h>
+#include <sys/mman.h>
+#include <unistd.h>
+
+#include "src/compiler.h"
 #include "src/parser.h"
 
 int main(int argc, char *args[]) {
@@ -15,16 +20,18 @@ int main(int argc, char *args[]) {
         Program program = parse(source, size, &i);
         free(source);
 
-        /*
-        for(int j = 0; j < program.length; j++) {
-            VmCommand cmd = program.commands[j];
-            printf("op: %d; value: %d; shift: %d; jump: %d\n", cmd.op, cmd.value, cmd.shift, cmd.jump);
-        }
-        printf("len: %d\n", program.length);
-        */
+        //run(program.commands);
 
-        run(program.commands);
+        ByteCode bytecode = compile(program);
+        off_t pagesize = sysconf(_SC_PAGESIZE);
+        void *pagestart = (void *)((off_t)bytecode.ops & ~(pagesize - 1));
+        off_t offset = (off_t)bytecode.ops - (off_t)pagestart;
+        mprotect(pagestart, offset + bytecode.length, PROT_READ | PROT_WRITE | PROT_EXEC);
+        ((void(*)(void))bytecode.ops)();
+        bytecode_deinit(bytecode);
+
         program_deinit(program);
     }
+
     return 0;
 }

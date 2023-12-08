@@ -1,4 +1,7 @@
+#include <assert.h>
+
 #include "bitarray.h"
+#include "program.h"
 #include "parser.h"
 
 static const uint8_t MOD_INV[256] = {
@@ -131,7 +134,7 @@ Program parse(char *source, size_t srclen, size_t *i) {
                 } else {
                     (*i)++;
                     Program subprog = parse(source, srclen, i);
-                    VmCommand command = { .op = OP_JRZ, .shift = shift, .jump = subprog.length };
+                    VmCommand command = { .op = OP_JRZ, .shift = shift, .jump = subprog.weight };
                     program_append(&program, command);
                     program_concat(&program, subprog);
                     program_deinit(subprog);
@@ -145,7 +148,7 @@ Program parse(char *source, size_t srclen, size_t *i) {
                     program_deinit(program);
                     return unroll(source, base_i, MOD_INV[base_value]);
                 }
-                VmCommand command = { .op = OP_JRNZ, .shift = shift, .jump = program.length + 1 };
+                VmCommand command = { .op = OP_JRNZ, .shift = shift, .jump = -program.weight - 15 };
                 program_append(&program, command);
                 return program;
             }
