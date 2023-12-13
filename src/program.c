@@ -3,12 +3,12 @@
 static const size_t WEIGHT[] = {
     9,  // OP_SET
     9,  // OP_ADD
-    13, // OP_MULL
+    13, // OP_MUL
     17, // OP_JRZ
     15, // OP_JRNZ
     20, // OP_PUTC
     20, // OP_GETC
-    16, // OP_END
+    15, // OP_END
 };
 
 Program program_init() {

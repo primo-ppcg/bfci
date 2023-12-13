@@ -53,13 +53,13 @@ void run(VmCommand *commands) {
 
     vm_op(OP_JRNZ) {
         if(tape[pointer] != 0) {
-            commands += command.jump;
+            commands += command.jump - 1;
         }
         vm_next();
     }
 
     vm_op(OP_PUTC) {
-        write(STDOUT_FILENO, &tape[pointer], 1);
+        putchar(tape[pointer]);
         vm_next();
     }
 

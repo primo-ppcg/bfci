@@ -148,7 +148,7 @@ Program parse(char *source, size_t srclen, size_t *i) {
                     program_deinit(program);
                     return unroll(source, base_i, MOD_INV[base_value]);
                 }
-                VmCommand command = { .op = OP_JRNZ, .shift = shift, .jump = -program.weight - 15 };
+                VmCommand command = { .op = OP_JRNZ, .shift = shift, .jump = -program.weight };
                 program_append(&program, command);
                 return program;
             }

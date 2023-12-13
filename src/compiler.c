@@ -8,8 +8,8 @@
 }
 
 #define imm8(value) value & 0xFF
-#define imm16(value) imm8(value), imm8(value >> 8)
-#define imm32(value) imm16(value), imm16(value >> 16)
+#define imm16(value) imm8(value), imm8((value) >> 8)
+#define imm32(value) imm16(value), imm16((value) >> 16)
 
 void bytecode_deinit(ByteCode bytecode) {
     free(bytecode.ops);
@@ -29,13 +29,11 @@ ByteCode compile(Program program) {
 
     emit(
         /* sub $65536, %rsp         */  0x48, 0x81, 0xEC, 0x00, 0x00, 0x01, 0x00,
-        /* xor %rax, %rax           */  0x48, 0x31, 0xC0,
+        /* xor %eax, %eax           */  0x31, 0xC0,
+        /* mov %eax, %ebx           */  0x89, 0xC3,
         /* mov $8192, %ecx          */  0xB9, 0x00, 0x20, 0x00, 0x00,
         /* mov %rsp, %rdi           */  0x48, 0x89, 0xE7,
-        /* cld                      */  0xFC,
-        /* rep stosq                */  0xF3, 0x48, 0xAB,
-        /* xor %rbx, %rbx           */  0x48, 0x31, 0xDB,
-        /* xor %rcx, %rcx           */  0x48, 0x31, 0xC9
+        /* rep stosq                */  0xF3, 0x48, 0xAB
     )
 
     for(size_t i = 0; i < program.length; i++) {
@@ -65,14 +63,14 @@ ByteCode compile(Program program) {
             case OP_JRZ:
                 emit(
                     /* mov %ebx, %ecx           */  0x89, 0xD9,
-                    /* cmpb $0, (%rsp,%rbx)     */  0x80, 0x3C, 0x1C, 0x00,
+                    /* testb $255, (%rsp,%rbx)  */  0xF6, 0x04, 0x1C, 0xFF,
                     /* jrz imm32                */  0x0F, 0x84, imm32(command.jump)
                 )
                 break;
             case OP_JRNZ:
                 emit(
-                    /* cmpb $0, (%rsp,%rbx)     */  0x80, 0x3C, 0x1C, 0x00,
-                    /* jrnz imm32               */  0x0F, 0x85, imm32(command.jump)
+                    /* testb $255, (%rsp,%rbx)  */  0xF6, 0x04, 0x1C, 0xFF,
+                    /* jrnz imm32               */  0x0F, 0x85, imm32(command.jump - 15)
                 )
                 break;
             case OP_PUTC:
@@ -96,7 +94,7 @@ ByteCode compile(Program program) {
             case OP_END:
                 emit(
                     /* add $65536, %rsp         */  0x48, 0x81, 0xC4, 0x00, 0x00, 0x01, 0x00,
-                    /* xor %rax, %rax           */  0x48, 0x31, 0xC0,
+                    /* xor %eax, %eax           */  0x31, 0xC0,
                     /* ret                      */  0xC3
                 )
                 break;
