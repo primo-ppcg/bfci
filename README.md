@@ -7,5 +7,8 @@ cc --std=c99 -Wall -Wextra -O3 -s -o bfci bfci.c src/*.c
 ```
 ### Usage
 ```
-bfci program.bf
+bfci -x program.bf
+```
+```
+bfci -xc"+[++[<+++>->+++<]>+++++++]<<<--.<.<--..<<---.<+++.<+.>>.>+.>.>-.<<<<+.[<]>+."
 ```

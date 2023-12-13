@@ -1,3 +1,5 @@
+#pragma once
+
 #include <stdint.h>
 
 #define OP_SET  0x00
@@ -16,4 +18,4 @@ typedef struct {
     int32_t jump;
 } VmCommand;
 
-void run(VmCommand *commands);
+void vm_run(VmCommand *commands);

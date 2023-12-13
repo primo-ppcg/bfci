@@ -62,10 +62,9 @@ int main(int argc, char *argv[]) {
     Program program;
     if(args.code != NULL) {
         size_t i = 0;
-        program = parse(args.code, strlen(args.code), &i);
+        program = parse(args.code, strlen(args.code), &i, args.interpret);
     } else if(args.file != NULL) {
-        FILE *fp;
-        fp = fopen(args.file, "r");
+        FILE *fp = fopen(args.file, "r");
         if(fp == NULL) {
             perror(args.file);
             return errno;
@@ -75,25 +74,27 @@ int main(int argc, char *argv[]) {
         size_t size = ftell(fp);
         rewind(fp);
         char *source = malloc(size);
-        fread(source, 1, size, fp);
+        fread(source, sizeof(char), size, fp);
         fclose(fp);
 
         size_t i = 0;
-        program = parse(source, size, &i);
+        program = parse(source, size, &i, args.interpret);
         free(source);
     } else {
         return 0;
     }
 
-    //if(args.interpret) run(program.commands);
-
-    ByteCode bytecode = compile(program);
-    off_t pagesize = sysconf(_SC_PAGESIZE);
-    void *pagestart = (void *)((off_t)bytecode.ops & ~(pagesize - 1));
-    off_t offset = (off_t)bytecode.ops - (off_t)pagestart;
-    mprotect(pagestart, offset + bytecode.length, PROT_READ | PROT_WRITE | PROT_EXEC);
-    ((void(*)(void))bytecode.ops)();
-    bytecode_deinit(bytecode);
+    if(args.interpret) {
+        vm_run(program.commands);
+    } else {
+        ByteCode bytecode = compile(program);
+        off_t pagesize = sysconf(_SC_PAGESIZE);
+        void *pagestart = (void *)((off_t)bytecode.ops & ~(pagesize - 1));
+        off_t offset = (off_t)bytecode.ops - (off_t)pagestart;
+        mprotect(pagestart, offset + bytecode.length, PROT_READ | PROT_WRITE | PROT_EXEC);
+        ((void(*)(void))bytecode.ops)();
+        bytecode_deinit(bytecode);
+    }
 
     program_deinit(program);
 

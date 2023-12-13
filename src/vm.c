@@ -8,7 +8,7 @@
 #define vm_go()   pointer += command.shift; goto *OP_LOOKUP[command.op]
 #define vm_next() command = *(++commands); vm_go()
 
-void run(VmCommand *commands) {
+void vm_run(VmCommand *commands) {
     static const void *OP_LOOKUP[8] = {
         &&label_OP_SET,
         &&label_OP_ADD,

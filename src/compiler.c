@@ -70,7 +70,7 @@ ByteCode compile(Program program) {
             case OP_JRNZ:
                 emit(
                     /* testb $255, (%rsp,%rbx)  */  0xF6, 0x04, 0x1C, 0xFF,
-                    /* jrnz imm32               */  0x0F, 0x85, imm32(command.jump - 15)
+                    /* jrnz imm32               */  0x0F, 0x85, imm32(command.jump - BYTECODE_WEIGHTS[OP_JRNZ])
                 )
                 break;
             case OP_PUTC:

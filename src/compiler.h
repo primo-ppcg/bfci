@@ -1,7 +1,20 @@
+#pragma once
+
 #include <stdint.h>
 #include <stdlib.h>
 
 #include "program.h"
+
+static const size_t BYTECODE_WEIGHTS[] = {
+    9,  // OP_SET
+    9,  // OP_ADD
+    13, // OP_MUL
+    17, // OP_JRZ
+    15, // OP_JRNZ
+    20, // OP_PUTC
+    20, // OP_GETC
+    15, // OP_END
+};
 
 typedef struct {
     size_t length;
@@ -10,4 +23,4 @@ typedef struct {
 } ByteCode;
 
 ByteCode compile(Program program);
-void bytecode_deinit();
+void bytecode_deinit(ByteCode bytecode);
