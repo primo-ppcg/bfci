@@ -23,8 +23,8 @@ static const uint8_t MOD_INV[256] = {
     0x01, 0xEF, 0x37, 0xC5, 0xEB, 0xA3, 0xCD, 0x39, 0x01, 0xB7, 0x2B, 0xCD, 0x01, 0xAB, 0x01, 0x01
 };
 
-static Program unroll(char *source, size_t i, bool interpret, uint8_t mul) {
-    Program program = program_init(interpret);
+static Program unroll(char *source, size_t i, uint8_t mul) {
+    Program program = program_init();
     BitArray zeros = bitarray_init();
     uint16_t shift = 0;
     int16_t total_shift = 0;
@@ -134,7 +134,11 @@ Program parse(char *source, size_t srclen, size_t *i, bool interpret) {
                 } else {
                     (*i)++;
                     Program subprog = parse(source, srclen, i, interpret);
-                    VmCommand command = { .op = OP_JRZ, .shift = shift, .jump = subprog.weight };
+                    VmCommand command = {
+                        .op = OP_JRZ,
+                        .shift = shift,
+                        .jump = interpret ? subprog.length : subprog.weight
+                    };
                     program_append(&program, command);
                     program_concat(&program, subprog);
                     program_deinit(subprog);
@@ -146,9 +150,13 @@ Program parse(char *source, size_t srclen, size_t *i, bool interpret) {
             case ']': {
                 if(total_shift == 0 && !poison && (base_value & 1) == 1) {
                     program_deinit(program);
-                    return unroll(source, base_i, interpret, MOD_INV[base_value]);
+                    return unroll(source, base_i, MOD_INV[base_value]);
                 }
-                VmCommand command = { .op = OP_JRNZ, .shift = shift, .jump = -program.weight };
+                VmCommand command = {
+                    .op = OP_JRNZ,
+                    .shift = shift,
+                    .jump = -(interpret ? program.length : program.weight)
+                };
                 program_append(&program, command);
                 return program;
             }

@@ -1,8 +1,10 @@
+#include <string.h>
+
 #include "compiler.h"
 #include "program.h"
 
-Program program_init(bool interpret) {
-    Program program = { .length = 0, .capacity = 8, .weight = 0, .interpret = interpret, .commands = malloc(8 * sizeof(VmCommand)) };
+Program program_init() {
+    Program program = { .length = 0, .capacity = 8, .weight = 0, .commands = malloc(8 * sizeof(VmCommand)) };
     return program;
 }
 
@@ -27,5 +29,5 @@ void program_append(Program *program, VmCommand command) {
     }
     program->commands[program->length] = command;
     program->length++;
-    program->weight += program->interpret ? 1 : BYTECODE_WEIGHTS[command.op];
+    program->weight += BYTECODE_WEIGHTS[command.op];
 }
