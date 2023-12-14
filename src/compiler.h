@@ -1,5 +1,6 @@
 #pragma once
 
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
 
@@ -24,3 +25,4 @@ typedef struct {
 
 ByteCode compile(Program program);
 void bytecode_deinit(ByteCode bytecode);
+bool write_executable(ByteCode bytecode, char *path);

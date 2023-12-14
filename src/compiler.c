@@ -1,4 +1,8 @@
+#include <elf.h>
+#include <stdio.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 #include "compiler.h"
 
@@ -102,4 +106,61 @@ ByteCode compile(Program program) {
     }
 
     return bytecode;
+}
+
+bool write_executable(ByteCode bytecode, char *path) {
+    uint8_t opcodes[] = {
+        /* call $9                  */  0xE8, 0x09, 0x00, 0x00, 0x00,
+        /* mov $60, %eax            */  0xB8, 0x3C, 0x00, 0x00, 0x00,
+        /* xor %edi, %edi           */  0x31, 0xFF,
+        /* syscall                  */  0x0F, 0x05
+    };
+    ByteCode entry = { .length = sizeof(opcodes), .ops = opcodes };
+
+    const Elf64_Addr vaddr = 0x800000;
+    const Elf64_Off hsize = sizeof(Elf64_Ehdr) + sizeof(Elf64_Phdr);
+    const Elf64_Xword filesz = hsize + entry.length + bytecode.length;
+
+    Elf64_Ehdr fileheader = {
+        .e_ident = { ELFMAG0, ELFMAG1, ELFMAG2, ELFMAG3, ELFCLASS64, ELFDATA2LSB, EV_CURRENT, ELFOSABI_NONE, 0 },
+        .e_type = ET_EXEC,
+        .e_machine = EM_X86_64,
+        .e_version = EV_CURRENT,
+        .e_entry = vaddr + hsize,
+        .e_phoff = sizeof(Elf64_Ehdr),
+        .e_shoff = 0,
+        .e_flags = 0,
+        .e_ehsize = sizeof(Elf64_Ehdr),
+        .e_phentsize = sizeof(Elf64_Phdr),
+        .e_phnum = 1,
+        .e_shentsize = sizeof(Elf64_Shdr),
+        .e_shnum = 0,
+        .e_shstrndx = SHN_UNDEF
+    };
+    Elf64_Phdr progheader = {
+        .p_type = PT_LOAD,
+        .p_flags = PF_R | PF_X,
+        .p_offset = 0,
+        .p_vaddr = vaddr,
+        .p_paddr = vaddr,
+        .p_filesz = filesz,
+        .p_memsz = filesz,
+        .p_align = 0x1000
+    };
+
+    FILE *fp = fopen(path, "w");
+    if(fp == NULL) {
+        perror(path);
+        return false;
+    }
+
+    fwrite((void *)&fileheader, sizeof(Elf64_Ehdr), 1, fp);
+    fwrite((void *)&progheader, sizeof(Elf64_Phdr), 1, fp);
+    fwrite(entry.ops, sizeof(uint8_t), entry.length, fp);
+    fwrite(bytecode.ops, sizeof(uint8_t), bytecode.length, fp);
+    fclose(fp);
+
+    chmod(path, 0744);
+
+    return true;
 }

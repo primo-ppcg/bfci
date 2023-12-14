@@ -14,24 +14,36 @@ static char args_doc[] = "[file]";
 static struct argp_option options[] = {
     { "interpret", 'i', 0, 0, "run as an interpreter (default)", 0 },
     { "execute", 'x', 0, 0, "compile and execute from memory", 0 },
+    { "outfile", 'o', "file", 0, "compile and write to file", 0},
     { "code", 'c', "code", 0, "a string of instructions to be executed\nif present, the file argument will be ignored", 0 },
     { 0 }
 };
 
+typedef enum {
+    INTERPRET,
+    EXECUTE,
+    COMPILE
+} operation_mode;
+
 struct arguments {
-    bool interpret;
-    char *file;
+    operation_mode mode;
     char *code;
+    char *file;
+    char *outfile;
 };
 
 static error_t parse_opt(int key, char *arg, struct argp_state *state) {
     struct arguments *arguments = state->input;
     switch(key) {
         case 'i':
-            arguments->interpret = true;
+            arguments->mode = INTERPRET;
             break;
         case 'x':
-            arguments->interpret = false;
+            arguments->mode = EXECUTE;
+            break;
+        case 'o':
+            arguments->mode = COMPILE;
+            arguments->outfile = arg;
             break;
         case 'c':
             arguments->code = arg;
@@ -56,14 +68,14 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
 static struct argp argp = { .options = options, .parser = parse_opt, .args_doc = args_doc, .doc = doc };
 
 int main(int argc, char *argv[]) {
-    struct arguments args = { .interpret = true, .file = NULL, .code = NULL };
+    struct arguments args = { .mode = INTERPRET, .file = NULL, .code = NULL };
 
     argp_parse(&argp, argc, argv, 0, 0, &args);
 
     Program program;
     if(args.code != NULL) {
         size_t i = 0;
-        program = parse(args.code, strlen(args.code), &i, args.interpret);
+        program = parse(args.code, strlen(args.code), &i, args.mode == INTERPRET);
     } else if(args.file != NULL) {
         FILE *fp = fopen(args.file, "r");
         if(fp == NULL) {
@@ -79,22 +91,32 @@ int main(int argc, char *argv[]) {
         fclose(fp);
 
         size_t i = 0;
-        program = parse(source, size, &i, args.interpret);
+        program = parse(source, size, &i, args.mode == INTERPRET);
         free(source);
     } else {
         return 0;
     }
 
-    if(args.interpret) {
-        vm_run(program.commands);
-    } else {
-        ByteCode bytecode = compile(program);
-        off_t pagesize = sysconf(_SC_PAGESIZE);
-        void *pagestart = (void *)((off_t)bytecode.ops & ~(pagesize - 1));
-        off_t offset = (off_t)bytecode.ops - (off_t)pagestart;
-        mprotect(pagestart, offset + bytecode.length, PROT_READ | PROT_WRITE | PROT_EXEC);
-        ((void(*)(void))bytecode.ops)();
-        bytecode_deinit(bytecode);
+    switch(args.mode) {
+        case INTERPRET:
+            vm_run(program.commands);
+            break;
+        case EXECUTE: {
+            ByteCode bytecode = compile(program);
+            off_t pagesize = sysconf(_SC_PAGESIZE);
+            void *pagestart = (void *)((off_t)bytecode.ops & ~(pagesize - 1));
+            off_t offset = (off_t)bytecode.ops - (off_t)pagestart;
+            mprotect(pagestart, offset + bytecode.length, PROT_READ | PROT_WRITE | PROT_EXEC);
+            ((void(*)(void))bytecode.ops)();
+            bytecode_deinit(bytecode);
+            break;
+        }
+        case COMPILE: {
+            ByteCode bytecode = compile(program);
+            write_executable(bytecode, args.outfile);
+            bytecode_deinit(bytecode);
+            break;
+        }
     }
 
     program_deinit(program);
