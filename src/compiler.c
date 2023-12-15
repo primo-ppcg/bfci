@@ -150,7 +150,6 @@ bool write_executable(ByteCode bytecode, char *path) {
 
     FILE *fp = fopen(path, "w");
     if(fp == NULL) {
-        perror(path);
         return false;
     }
 

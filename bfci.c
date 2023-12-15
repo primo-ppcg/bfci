@@ -1,4 +1,5 @@
-#include <argp.h>
+#include <errno.h>
+#include <getopt.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
@@ -8,69 +9,99 @@
 #include "src/compiler.h"
 #include "src/parser.h"
 
-static char doc[] = "A simple, small, moderately optimizing compiling interpreter for the brainfuck programming language.";
-static char args_doc[] = "[file]";
-
-static struct argp_option options[] = {
-    { "interpret", 'i', 0, 0, "run as an interpreter (default)", 0 },
-    { "execute", 'x', 0, 0, "compile and execute from memory", 0 },
-    { "outfile", 'o', "file", 0, "compile and write to file", 0},
-    { "code", 'c', "code", 0, "a string of instructions to be executed\nif present, the file argument will be ignored", 0 },
-    { 0 }
-};
-
 typedef enum {
     INTERPRET,
     EXECUTE,
     COMPILE
-} operation_mode;
+} OperationMode;
 
-struct arguments {
-    operation_mode mode;
+typedef struct {
+    OperationMode mode;
     char *code;
     char *file;
     char *outfile;
+} Arguments;
+
+static struct option long_options[] = {
+    { "interpret", no_argument, 0, 'i' },
+    { "execute", no_argument, 0, 'x' },
+    { "outfile", required_argument, 0, 'o' },
+    { "code", required_argument, 0, 'c' },
+    { "help", no_argument, 0, 'h' },
+    { 0 }
 };
 
-static error_t parse_opt(int key, char *arg, struct argp_state *state) {
-    struct arguments *arguments = state->input;
-    switch(key) {
-        case 'i':
-            arguments->mode = INTERPRET;
-            break;
-        case 'x':
-            arguments->mode = EXECUTE;
-            break;
-        case 'o':
-            arguments->mode = COMPILE;
-            arguments->outfile = arg;
-            break;
-        case 'c':
-            arguments->code = arg;
-        case ARGP_KEY_ARG:
-            if(state->arg_num >= 1) {
-                argp_usage(state);
-            }
-            arguments->file = arg;
-            break;
-        case ARGP_KEY_END:
-            if(arguments->file == NULL && arguments->code == NULL) {
-                argp_usage(state);
-            }
-            break;
-        default:
-            return ARGP_ERR_UNKNOWN;
-    }
-
-    return 0;
+static void display_usage(char *name) {
+    fprintf(stderr, "Usage: %s [-ixo:] (-c <code> | <file>)\n", name);
 }
 
-static struct argp argp = { .options = options, .parser = parse_opt, .args_doc = args_doc, .doc = doc };
+static void display_help(char *name) {
+    display_usage(name);
+    fprintf(stderr,
+        "\n"
+        "A simple, small, moderately optimizing compiling interpreter for the\n"
+        "brainfuck programming language.\n"
+        "\n"
+        "Arguments:\n"
+        "  file              a brainfuck script file to execute\n"
+        "\n"
+        "Options:\n"
+        "  -c, --code=       a string of instructions to be executed\n"
+        "                    if present, the file argument will be ignored\n"
+        "  -i, --interpret   run as an interpreter (default)\n"
+        "  -x, --execute     compile and execute from memory\n"
+        "  -o, --outfile=    compile and write to file\n"
+        "  -h, --help        display this message\n"
+    );
+}
+
+static bool parse_args(int argc, char *argv[], Arguments *args) {
+    int option_index = 0;
+    int opt = 0;
+    while((opt = getopt_long(argc, argv, "ixo:c:h", long_options, &option_index)) != -1) {
+        if(opt == 0) {
+            opt = long_options[option_index].val;
+        }
+        switch(opt) {
+            case 'i':
+                args->mode = INTERPRET;
+                break;
+            case 'x':
+                args->mode = EXECUTE;
+                break;
+            case 'o':
+                args->mode = COMPILE;
+                args->outfile = optarg;
+                break;
+            case 'c':
+                args->code = optarg;
+                break;
+            case 'h':
+                display_help(argv[0]);
+                return false;
+                break;
+            case '?':
+                display_usage(argv[0]);
+                return false;
+                break;
+        }
+    }
+
+    if(optind == argc - 1) {
+        args->file = argv[optind];
+    } else if(optind < argc - 1) {
+        display_usage(argv[0]);
+        return false;
+    }
+
+    return true;
+}
 
 int main(int argc, char *argv[]) {
-    struct arguments args = { .mode = INTERPRET, .file = NULL, .code = NULL };
-
-    argp_parse(&argp, argc, argv, 0, 0, &args);
+    Arguments args = { .mode = INTERPRET, .code = NULL, .file = NULL, .outfile = NULL };
+    if(!parse_args(argc, argv, &args)) {
+        return 1;
+    }
 
     Program program;
     if(args.code != NULL) {
@@ -80,7 +111,7 @@ int main(int argc, char *argv[]) {
         FILE *fp = fopen(args.file, "r");
         if(fp == NULL) {
             perror(args.file);
-            return errno;
+            return 1;
         }
 
         fseek(fp, 0, SEEK_END);
@@ -94,7 +125,8 @@ int main(int argc, char *argv[]) {
         program = parse(source, size, &i, args.mode == INTERPRET);
         free(source);
     } else {
-        return 0;
+        display_usage(argv[0]);
+        return 1;
     }
 
     switch(args.mode) {
@@ -113,7 +145,13 @@ int main(int argc, char *argv[]) {
         }
         case COMPILE: {
             ByteCode bytecode = compile(program);
-            write_executable(bytecode, args.outfile);
+            if(!write_executable(bytecode, args.outfile)) {
+                bytecode_deinit(bytecode);
+                program_deinit(program);
+                perror(args.outfile);
+                return 1;
+            }
+
             bytecode_deinit(bytecode);
             break;
         }
