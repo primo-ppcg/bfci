@@ -1,4 +1,6 @@
+#ifdef DEBUG
 #include <assert.h>
+#endif
 
 #include "bitarray.h"
 #include "program.h"
@@ -40,7 +42,9 @@ static Program unroll(char *source, size_t i, uint8_t mul) {
                 total_shift--;
                 break;
             case '[': {
+#ifdef DEBUG
                 assert((source[i + 1] == '+' || source[i + 1] == '-') && source[i + 2] == ']' && total_shift != 0);
+#endif
                 i += 2;
                 uint8_t value = 0;
                 while(source[i + 1] == '+' || source[i + 1] == '-') {
@@ -54,7 +58,9 @@ static Program unroll(char *source, size_t i, uint8_t mul) {
                 break;
             }
             case ']': {
+#ifdef DEBUG
                 assert(total_shift == 0);
+#endif
                 VmCommand command = { .op = OP_SET, .value = 0, .shift = shift };
                 program_append(&program, command);
                 bitarray_deinit(zeros);
