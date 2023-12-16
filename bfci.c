@@ -104,9 +104,10 @@ int main(int argc, char *argv[]) {
     }
 
     Program program;
+    size_t i = 0;
+    int depth = 0;
     if(args.code != NULL) {
-        size_t i = 0;
-        program = parse(args.code, strlen(args.code), &i, args.mode == INTERPRET);
+        program = parse(args.code, strlen(args.code), &i, &depth, args.mode == INTERPRET);
     } else if(args.file != NULL) {
         FILE *fp = fopen(args.file, "r");
         if(fp == NULL) {
@@ -121,11 +122,20 @@ int main(int argc, char *argv[]) {
         fread(source, sizeof(char), size, fp);
         fclose(fp);
 
-        size_t i = 0;
-        program = parse(source, size, &i, args.mode == INTERPRET);
+        program = parse(source, size, &i, &depth, args.mode == INTERPRET);
         free(source);
     } else {
         display_usage(argv[0]);
+        return 1;
+    }
+
+    if(depth > 0) {
+        fprintf(stderr, "Unmatched `[` in source at position %zu\n", i);
+        program_deinit(program);
+        return 1;
+    } else if(depth < 0) {
+        fprintf(stderr, "Unmatched `]` in source at position %zu\n", i);
+        program_deinit(program);
         return 1;
     }
 
@@ -151,7 +161,6 @@ int main(int argc, char *argv[]) {
                 perror(args.outfile);
                 return 1;
             }
-
             bytecode_deinit(bytecode);
             break;
         }

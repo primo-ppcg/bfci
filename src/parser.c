@@ -85,7 +85,7 @@ static Program unroll(char *source, size_t i, uint8_t mul) {
     }
 }
 
-Program parse(char *source, size_t srclen, size_t *i, bool interpret) {
+Program parse(char *source, size_t srclen, size_t *i, int *depth, bool interpret) {
     Program program = program_init(interpret);
     uint16_t shift = 0;
     int16_t total_shift = 0;
@@ -132,8 +132,16 @@ Program parse(char *source, size_t srclen, size_t *i, bool interpret) {
                     program_append(&program, command);
                     shift = 0;
                 } else {
+                    size_t j = *i;
                     (*i)++;
-                    Program subprog = parse(source, srclen, i, interpret);
+                    (*depth)++;
+                    Program subprog = parse(source, srclen, i, depth, interpret);
+                    if(subprog.commands[subprog.length - 1].op == OP_END) {
+                        *i = j;
+                        program_append(&program, subprog.commands[subprog.length - 1]);
+                        program_deinit(subprog);
+                        return program;
+                    }
                     VmCommand command = {
                         .op = OP_JRZ,
                         .shift = shift,
@@ -148,6 +156,7 @@ Program parse(char *source, size_t srclen, size_t *i, bool interpret) {
                 break;
             }
             case ']': {
+                (*depth)--;
                 if(total_shift == 0 && !poison && (base_value & 1) == 1) {
                     program_deinit(program);
                     return unroll(source, base_i, MOD_INV[base_value]);
