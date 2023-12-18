@@ -14,7 +14,7 @@ static const size_t BYTECODE_WEIGHTS[] = {
     15, // OP_JRNZ
     20, // OP_PUTC
     20, // OP_GETC
-    15, // OP_END
+    14, // OP_END
 };
 
 typedef struct {

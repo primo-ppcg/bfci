@@ -32,6 +32,7 @@ ByteCode compile(Program program) {
     ByteCode bytecode = { .length = 0, .capacity = 256, .ops = malloc(256 * sizeof(uint8_t)) };
 
     emit(
+        /* push %rbx                */  0x53,
         /* sub $65536, %rsp         */  0x48, 0x81, 0xEC, 0x00, 0x00, 0x01, 0x00,
         /* xor %eax, %eax           */  0x31, 0xC0,
         /* mov %eax, %ebx           */  0x89, 0xC3,
@@ -98,7 +99,7 @@ ByteCode compile(Program program) {
             case OP_END:
                 emit(
                     /* add $65536, %rsp         */  0x48, 0x81, 0xC4, 0x00, 0x00, 0x01, 0x00,
-                    /* xor %eax, %eax           */  0x31, 0xC0,
+                    /* pop %rbx                 */  0x5B,
                     /* ret                      */  0xC3
                 )
                 break;
