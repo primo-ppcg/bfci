@@ -11,7 +11,7 @@
     bytecode_append(&bytecode, sizeof(opcodes), opcodes); \
 }
 
-#define imm8(value) value & 0xFF
+#define imm8(value) (value) & 0xFF
 #define imm16(value) imm8(value), imm8((value) >> 8)
 #define imm32(value) imm16(value), imm16((value) >> 16)
 
