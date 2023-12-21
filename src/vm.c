@@ -8,18 +8,19 @@
 #define vm_next() command = *(++commands); vm_go()
 
 void vm_run(VmCommand *commands) {
-    static const void *OP_LOOKUP[8] = {
-        &&label_OP_SET,
-        &&label_OP_ADD,
-        &&label_OP_MUL,
+    static const void *OP_LOOKUP[] = {
         &&label_OP_JRZ,
         &&label_OP_JRNZ,
+        &&label_OP_ADD,
+        &&label_OP_SET,
+        &&label_OP_CPY,
+        &&label_OP_MUL,
         &&label_OP_PUTC,
         &&label_OP_GETC,
         &&label_OP_END
     };
 
-    register uint8_t base = 0;
+    uint8_t base = 0;
     register uint16_t pointer = 0;
     uint8_t tape[UINT16_MAX] = { 0 };
 
@@ -27,24 +28,9 @@ void vm_run(VmCommand *commands) {
 
     vm_go();
 
-    vm_op(OP_SET) {
-        tape[pointer] = command.value;
-        vm_next();
-    }
-
-    vm_op(OP_ADD) {
-        tape[pointer] += command.value;
-        vm_next();
-    }
-
-    vm_op(OP_MUL) {
-        tape[pointer] += base * command.value;
-        vm_next();
-    }
-
     vm_op(OP_JRZ) {
         base = tape[pointer];
-        if(tape[pointer] == 0) {
+        if(base == 0) {
             commands += command.jump;
         }
         vm_next();
@@ -54,6 +40,26 @@ void vm_run(VmCommand *commands) {
         if(tape[pointer] != 0) {
             commands += command.jump - 1;
         }
+        vm_next();
+    }
+
+    vm_op(OP_ADD) {
+        tape[pointer] += command.value;
+        vm_next();
+    }
+
+    vm_op(OP_SET) {
+        tape[pointer] = command.value;
+        vm_next();
+    }
+
+    vm_op(OP_CPY) {
+        tape[pointer] += base;
+        vm_next();
+    }
+
+    vm_op(OP_MUL) {
+        tape[pointer] += base * command.value;
         vm_next();
     }
 

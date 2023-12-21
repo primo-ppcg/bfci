@@ -50,22 +50,6 @@ ByteCode compile(Program program) {
         }
 
         switch(command.op) {
-            case OP_SET:
-                emit(
-                    /* movb imm8, (%rsp,%rbx)   */  0xC6, 0x04, 0x1C, imm8(command.value)
-                )
-                break;
-            case OP_ADD:
-                emit(
-                    /* addb imm8, (%rsp,%rbx)   */  0x80, 0x04, 0x1C, imm8(command.value)
-                )
-                break;
-            case OP_MUL:
-                emit(
-                    /* imulb imm8, %edx, %eax   */  0x6B, 0xC2, imm8(command.value),
-                    /* addb %al, (%rsp,%rbx)    */  0x00, 0x04, 0x1C
-                )
-                break;
             case OP_JRZ:
                 emit(
                     /* xor %edx, %edx           */  0x31, 0xD2,
@@ -77,6 +61,27 @@ ByteCode compile(Program program) {
                 emit(
                     /* testb $255, (%rsp,%rbx)  */  0xF6, 0x04, 0x1C, 0xFF,
                     /* jrnz imm32               */  0x0F, 0x85, imm32(command.jump - bytecode_weight(command))
+                )
+                break;
+            case OP_ADD:
+                emit(
+                    /* addb imm8, (%rsp,%rbx)   */  0x80, 0x04, 0x1C, imm8(command.value)
+                )
+                break;
+            case OP_SET:
+                emit(
+                    /* movb imm8, (%rsp,%rbx)   */  0xC6, 0x04, 0x1C, imm8(command.value)
+                )
+                break;
+            case OP_CPY:
+                emit(
+                    /* addb %dl, (%rsp,%rbx)    */  0x00, 0x14, 0x1C
+                )
+                break;
+            case OP_MUL:
+                emit(
+                    /* imulb imm8, %edx, %eax   */  0x6B, 0xC2, imm8(command.value),
+                    /* addb %al, (%rsp,%rbx)    */  0x00, 0x04, 0x1C
                 )
                 break;
             case OP_PUTC:

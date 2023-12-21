@@ -73,6 +73,9 @@ static Program unroll(char *source, size_t i, uint8_t mul) {
                     if(get_bit(zeros, total_shift)) {
                         VmCommand command = { .op = OP_ADD, .value = value, .shift = shift };
                         program_append(&program, command);
+                    } else if((uint8_t)(value * mul) == 1) {
+                        VmCommand command = { .op = OP_CPY, .shift = shift };
+                        program_append(&program, command);
                     } else {
                         VmCommand command = { .op = OP_MUL, .value = value * mul, .shift = shift };
                         program_append(&program, command);
