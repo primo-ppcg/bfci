@@ -29,5 +29,5 @@ void program_append(Program *program, VmCommand command) {
     }
     program->commands[program->length] = command;
     program->length++;
-    program->weight += BYTECODE_WEIGHTS[command.op];
+    program->weight += bytecode_weight(command);
 }

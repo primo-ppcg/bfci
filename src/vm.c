@@ -19,8 +19,8 @@ void vm_run(VmCommand *commands) {
         &&label_OP_END
     };
 
-    uint16_t anchor = 0;
-    uint16_t pointer = 0;
+    register uint8_t base = 0;
+    register uint16_t pointer = 0;
     uint8_t tape[UINT16_MAX] = { 0 };
 
     VmCommand command = *commands;
@@ -38,12 +38,12 @@ void vm_run(VmCommand *commands) {
     }
 
     vm_op(OP_MUL) {
-        tape[pointer] += tape[anchor] * command.value;
+        tape[pointer] += base * command.value;
         vm_next();
     }
 
     vm_op(OP_JRZ) {
-        anchor = pointer;
+        base = tape[pointer];
         if(tape[pointer] == 0) {
             commands += command.jump;
         }

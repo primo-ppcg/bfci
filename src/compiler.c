@@ -35,7 +35,7 @@ ByteCode compile(Program program) {
         /* push %rbx                */  0x53,
         /* sub $65536, %rsp         */  0x48, 0x81, 0xEC, 0x00, 0x00, 0x01, 0x00,
         /* xor %eax, %eax           */  0x31, 0xC0,
-        /* mov %eax, %ebx           */  0x89, 0xC3,
+        /* xor %ebx, %ebx           */  0x31, 0xDB,
         /* mov $8192, %ecx          */  0xB9, 0x00, 0x20, 0x00, 0x00,
         /* mov %rsp, %rdi           */  0x48, 0x89, 0xE7,
         /* rep stosq                */  0xF3, 0x48, 0xAB
@@ -43,9 +43,11 @@ ByteCode compile(Program program) {
 
     for(size_t i = 0; i < program.length; i++) {
         VmCommand command = program.commands[i];
-        emit(
-            /* addw imm16, %bx          */  0x66, 0x81, 0xC3, imm16(command.shift)
-        )
+        if(command.shift != 0) {
+            emit(
+                /* addw imm16, %bx          */  0x66, 0x81, 0xC3, imm16(command.shift)
+            )
+        }
 
         switch(command.op) {
             case OP_SET:
@@ -60,29 +62,28 @@ ByteCode compile(Program program) {
                 break;
             case OP_MUL:
                 emit(
-                    /* movb imm8, %al           */  0xB0, imm8(command.value),
-                    /* mulb (%rsp,%rcx)         */  0xF6, 0x24, 0x0C,
+                    /* imulb imm8, %edx, %eax   */  0x6B, 0xC2, imm8(command.value),
                     /* addb %al, (%rsp,%rbx)    */  0x00, 0x04, 0x1C
                 )
                 break;
             case OP_JRZ:
                 emit(
-                    /* mov %ebx, %ecx           */  0x89, 0xD9,
-                    /* testb $255, (%rsp,%rbx)  */  0xF6, 0x04, 0x1C, 0xFF,
+                    /* xor %edx, %edx           */  0x31, 0xD2,
+                    /* orb (%rsp,%rbx), %dl     */  0x0A, 0x14, 0x1C,
                     /* jrz imm32                */  0x0F, 0x84, imm32(command.jump)
                 )
                 break;
             case OP_JRNZ:
                 emit(
                     /* testb $255, (%rsp,%rbx)  */  0xF6, 0x04, 0x1C, 0xFF,
-                    /* jrnz imm32               */  0x0F, 0x85, imm32(command.jump - BYTECODE_WEIGHTS[OP_JRNZ])
+                    /* jrnz imm32               */  0x0F, 0x85, imm32(command.jump - bytecode_weight(command))
                 )
                 break;
             case OP_PUTC:
                 emit(
                     /* mov $1, %eax             */  0xB8, 0x01, 0x00, 0x00, 0x00,
-                    /* mov %eax, %edi           */  0x89, 0xC7,
                     /* lea (%rsp,%rbx), %rsi    */  0x48, 0x8D, 0x34, 0x1C,
+                    /* mov %eax, %edi           */  0x89, 0xC7,
                     /* mov %eax, %edx           */  0x89, 0xC2,
                     /* syscall                  */  0x0F, 0x05
                 )
@@ -90,8 +91,8 @@ ByteCode compile(Program program) {
             case OP_GETC:
                 emit(
                     /* xor %eax, %eax           */  0x31, 0xC0,
-                    /* mov %eax, %edi           */  0x89, 0xC7,
                     /* lea (%rsp,%rbx), %rsi    */  0x48, 0x8D, 0x34, 0x1C,
+                    /* xor %edi, %edi           */  0x31, 0xFF,
                     /* mov $1, %edx             */  0xBA, 0x01, 0x00, 0x00, 0x00,
                     /* syscall                  */  0x0F, 0x05
                 )

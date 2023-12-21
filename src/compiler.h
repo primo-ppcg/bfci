@@ -6,15 +6,17 @@
 
 #include "program.h"
 
+#define bytecode_weight(command) (BYTECODE_WEIGHTS[command.op] + (command.shift != 0 ? 5 : 0))
+
 static const size_t BYTECODE_WEIGHTS[] = {
-    9,  // OP_SET
-    9,  // OP_ADD
-    13, // OP_MUL
-    17, // OP_JRZ
-    15, // OP_JRNZ
-    20, // OP_PUTC
-    20, // OP_GETC
-    14, // OP_END
+    4,  // OP_SET
+    4,  // OP_ADD
+    6, // OP_MUL
+    11, // OP_JRZ
+    10, // OP_JRNZ
+    15, // OP_PUTC
+    15, // OP_GETC
+    9, // OP_END
 };
 
 typedef struct {
