@@ -1,7 +1,3 @@
-#ifdef DEBUG
-#include <assert.h>
-#endif
-
 #include "bitarray.h"
 #include "program.h"
 #include "parser.h"
@@ -38,9 +34,6 @@ static Program unroll(char *source, size_t i, uint8_t mul) {
                 total_shift--;
                 break;
             case '[': {
-#ifdef DEBUG
-                assert((source[i + 1] == '+' || source[i + 1] == '-') && source[i + 2] == ']' && total_shift != 0);
-#endif
                 i += 2;
                 uint8_t value = 0;
                 while(source[i + 1] == '+' || source[i + 1] == '-') {
@@ -54,9 +47,6 @@ static Program unroll(char *source, size_t i, uint8_t mul) {
                 break;
             }
             case ']': {
-#ifdef DEBUG
-                assert(total_shift == 0);
-#endif
                 VmCommand command = { .op = OP_SET, .value = 0, .shift = shift };
                 program_append(&program, command);
                 bitarray_deinit(zeros);
@@ -71,8 +61,12 @@ static Program unroll(char *source, size_t i, uint8_t mul) {
                 }
                 if(total_shift != 0) {
                     if(get_bit(zeros, total_shift)) {
-                        VmCommand command = { .op = OP_ADD, .value = value, .shift = shift };
-                        program_append(&program, command);
+                        if(shift == 0 && program.commands[program.length - 1].op == OP_SET) {
+                            program.commands[program.length - 1].value += value;
+                        } else {
+                            VmCommand command = { .op = OP_ADD, .value = value, .shift = shift };
+                            program_append(&program, command);
+                        }
                     } else if((uint8_t)(value * mul) == 1) {
                         VmCommand command = { .op = OP_CPY, .shift = shift };
                         program_append(&program, command);
@@ -147,6 +141,9 @@ Program parse(char *source, size_t srclen, size_t *i, int *depth, bool interpret
                         program_deinit(subprog);
                         return program;
                     }
+                    if(shift == 0 && program.commands[program.length - 1].op == OP_JRZ) {
+                        program_drop_first(&subprog);
+                    }
                     VmCommand command = {
                         .op = OP_JRZ,
                         .shift = shift,
@@ -166,12 +163,14 @@ Program parse(char *source, size_t srclen, size_t *i, int *depth, bool interpret
                     program_deinit(program);
                     return unroll(source, base_i, mod_inv(256 - (uint16_t)base_value));
                 }
-                VmCommand command = {
-                    .op = OP_JRNZ,
-                    .shift = shift,
-                    .jump = -(interpret ? program.length : program.weight)
-                };
-                program_append(&program, command);
+                if(shift != 0 || program.commands[program.length - 1].op != OP_JRNZ) {
+                    VmCommand command = {
+                        .op = OP_JRNZ,
+                        .shift = shift,
+                        .jump = -(interpret ? program.length : program.weight)
+                    };
+                    program_append(&program, command);
+                }
                 return program;
             }
             case '+':

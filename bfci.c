@@ -139,6 +139,26 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
+#ifdef DEBUG
+    static const char *OP_NAMES[] = {
+        "jrz",
+        "jrnz",
+        "add",
+        "set",
+        "cpy",
+        "mul",
+        "putc",
+        "getc",
+        "end"
+    };
+
+    for(size_t j = 0; j < program.length; j++) {
+        VmCommand cmd = program.commands[j];
+        printf("(%s %d %d %d)\n", OP_NAMES[cmd.op], (int8_t)cmd.value, (int16_t)cmd.shift, (int32_t)cmd.jump);
+    }
+    printf("length: %ld; weight: %ld\n", program.length, program.weight);
+#endif
+
     switch(args.mode) {
         case INTERPRET:
             vm_run(program.commands);

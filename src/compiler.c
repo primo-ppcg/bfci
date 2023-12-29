@@ -33,10 +33,10 @@ ByteCode compile(Program program) {
 
     emit(
         /* push %rbx                */  0x53,
-        /* sub $65536, %rsp         */  0x48, 0x81, 0xEC, 0x00, 0x00, 0x01, 0x00,
+        /* sub $65536, %rsp         */  0x48, 0x81, 0xEC, imm32(65536),
         /* xor %eax, %eax           */  0x31, 0xC0,
         /* xor %ebx, %ebx           */  0x31, 0xDB,
-        /* mov $8192, %ecx          */  0xB9, 0x00, 0x20, 0x00, 0x00,
+        /* mov $8192, %ecx          */  0xB9, imm32(8192),
         /* mov %rsp, %rdi           */  0x48, 0x89, 0xE7,
         /* rep stosq                */  0xF3, 0x48, 0xAB
     )
@@ -86,7 +86,7 @@ ByteCode compile(Program program) {
                 break;
             case OP_PUTC:
                 emit(
-                    /* mov $1, %eax             */  0xB8, 0x01, 0x00, 0x00, 0x00,
+                    /* mov $1, %eax             */  0xB8, imm32(1),
                     /* lea (%rsp,%rbx), %rsi    */  0x48, 0x8D, 0x34, 0x1C,
                     /* mov %eax, %edi           */  0x89, 0xC7,
                     /* mov %eax, %edx           */  0x89, 0xC2,
@@ -98,13 +98,13 @@ ByteCode compile(Program program) {
                     /* xor %eax, %eax           */  0x31, 0xC0,
                     /* lea (%rsp,%rbx), %rsi    */  0x48, 0x8D, 0x34, 0x1C,
                     /* xor %edi, %edi           */  0x31, 0xFF,
-                    /* mov $1, %edx             */  0xBA, 0x01, 0x00, 0x00, 0x00,
+                    /* mov $1, %edx             */  0xBA, imm32(1),
                     /* syscall                  */  0x0F, 0x05
                 )
                 break;
             case OP_END:
                 emit(
-                    /* add $65536, %rsp         */  0x48, 0x81, 0xC4, 0x00, 0x00, 0x01, 0x00,
+                    /* add $65536, %rsp         */  0x48, 0x81, 0xC4, imm32(65536),
                     /* pop %rbx                 */  0x5B,
                     /* ret                      */  0xC3
                 )
