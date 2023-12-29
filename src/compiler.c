@@ -52,7 +52,7 @@ ByteCode compile(Program program) {
         switch(command.op) {
             case OP_JRZ:
                 emit(
-                    /* xor %edx, %edx           */  0x31, 0xD2,
+                    /* shr $8, %edx             */  0xC1, 0xEA, 0x08,
                     /* orb (%rsp,%rbx), %dl     */  0x0A, 0x14, 0x1C,
                     /* jrz imm32                */  0x0F, 0x84, imm32(command.jump)
                 )
@@ -71,6 +71,17 @@ ByteCode compile(Program program) {
             case OP_SET:
                 emit(
                     /* movb imm8, (%rsp,%rbx)   */  0xC6, 0x04, 0x1C, imm8(command.value)
+                )
+                break;
+            case OP_SHL:
+                emit(
+                    /* shl $8, %edx             */  0xC1, 0xE2, 0x08,
+                    /* orb (%rsp,%rbx), %dl     */  0x0A, 0x14, 0x1C
+                )
+                break;
+            case OP_SHR:
+                emit(
+                    /* shr $8, %edx             */  0xC1, 0xEA, 0x08
                 )
                 break;
             case OP_CPY:

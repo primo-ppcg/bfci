@@ -9,6 +9,22 @@
 #include "src/compiler.h"
 #include "src/parser.h"
 
+#ifdef DEBUG
+static const char *OP_NAMES[] = {
+    "jrz",
+    "jrnz",
+    "add",
+    "set",
+    "shl",
+    "shr",
+    "cpy",
+    "mul",
+    "putc",
+    "getc",
+    "end"
+};
+#endif
+
 typedef enum {
     INTERPRET,
     EXECUTE,
@@ -138,6 +154,14 @@ int main(int argc, char *argv[]) {
         program_deinit(program);
         return 1;
     }
+
+#ifdef DEBUG
+    for(size_t j = 0; j < program.length; j++) {
+        VmCommand cmd = program.commands[j];
+        printf("(%s %d %d %d)\n", OP_NAMES[cmd.op], (int8_t)cmd.value, (int16_t)cmd.shift, (int32_t)cmd.jump);
+    }
+    printf("length: %ld\n", program.length);
+#endif
 
     switch(args.mode) {
         case INTERPRET:

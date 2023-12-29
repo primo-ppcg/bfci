@@ -9,10 +9,12 @@
 #define bytecode_weight(command) (BYTECODE_WEIGHTS[command.op] + (command.shift != 0 ? 5 : 0))
 
 static const size_t BYTECODE_WEIGHTS[] = {
-    11, // OP_JRZ
+    12, // OP_JRZ
     10, // OP_JRNZ
     4,  // OP_ADD
     4,  // OP_SET
+    6,  // OP_SHL
+    3,  // OP_SHR
     3,  // OP_CPY
     6,  // OP_MUL
     15, // OP_PUTC
