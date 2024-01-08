@@ -74,7 +74,5 @@ void vm_run(VmCommand *commands) {
         vm_next();
     }
 
-    vm_op(OP_END) {
-        return;
-    }
+    vm_op(OP_END) { }
 }

@@ -187,6 +187,5 @@ int main(int argc, char *argv[]) {
     }
 
     program_deinit(program);
-
     return 0;
 }

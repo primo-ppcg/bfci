@@ -117,8 +117,8 @@ ByteCode compile(Program program) {
 
 bool write_executable(ByteCode bytecode, char *path) {
     uint8_t opcodes[] = {
-        /* call $9                  */  0xE8, 0x09, 0x00, 0x00, 0x00,
-        /* mov $60, %eax            */  0xB8, 0x3C, 0x00, 0x00, 0x00,
+        /* call $9                  */  0xE8, imm32(9),
+        /* mov $60, %eax            */  0xB8, imm32(60),
         /* xor %edi, %edi           */  0x31, 0xFF,
         /* syscall                  */  0x0F, 0x05
     };

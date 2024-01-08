@@ -17,71 +17,49 @@ static uint8_t mod_inv(uint16_t a) {
     return (uint8_t)(x & 0xFF);
 }
 
-static Program unroll(char *source, size_t i, uint8_t mul) {
+static Program unroll(Program subprog, uint8_t mul) {
     Program program = program_init();
     BitArray zeros = bitarray_init();
     uint16_t shift = 0;
     int16_t total_shift = 0;
-    for(;; i++) {
-        char c = source[i];
-        switch(c) {
-            case '>':
-                shift++;
-                total_shift++;
-                break;
-            case '<':
-                shift--;
-                total_shift--;
-                break;
-            case '[': {
-                i += 2;
-                uint8_t value = 0;
-                while(source[i + 1] == '+' || source[i + 1] == '-') {
-                    i++;
-                    value += 44 - source[i];
-                }
-                VmCommand command = { .op = OP_SET, .value = value, .shift = shift };
-                program_append(&program, command);
-                shift = 0;
-                set_bit(&zeros, total_shift);
-                break;
-            }
-            case ']': {
-                VmCommand command = { .op = OP_SET, .value = 0, .shift = shift };
-                program_append(&program, command);
-                bitarray_deinit(zeros);
-                return program;
-            }
-            case '+':
-            case '-': {
-                uint8_t value = 44 - c;
-                while(source[i + 1] == '+' || source[i + 1] == '-') {
-                    i++;
-                    value += 44 - source[i];
-                }
+    for(size_t i = 0; i < subprog.length; i++) {
+        VmCommand cmd = subprog.commands[i];
+        shift += cmd.shift;
+        total_shift += cmd.shift;
+        switch(cmd.op) {
+            case OP_ADD: {
                 if(total_shift != 0) {
                     if(get_bit(zeros, total_shift)) {
-                        if(shift == 0 && program.commands[program.length - 1].op == OP_SET) {
-                            program.commands[program.length - 1].value += value;
-                        } else {
-                            VmCommand command = { .op = OP_ADD, .value = value, .shift = shift };
-                            program_append(&program, command);
-                        }
-                    } else if((uint8_t)(value * mul) == 1) {
+                        VmCommand command = { .op = OP_ADD, .value = cmd.value, .shift = shift };
+                        program_append(&program, command);
+                    } else if((uint8_t)(cmd.value * mul) == 1) {
                         VmCommand command = { .op = OP_CPY, .shift = shift };
                         program_append(&program, command);
                     } else {
-                        VmCommand command = { .op = OP_MUL, .value = value * mul, .shift = shift };
+                        VmCommand command = { .op = OP_MUL, .value = cmd.value * mul, .shift = shift };
                         program_append(&program, command);
                     }
                     shift = 0;
                 }
                 break;
             }
+            case OP_SET: {
+                VmCommand command = { .op = OP_SET, .value = cmd.value, .shift = shift };
+                program_append(&program, command);
+                set_bit(&zeros, total_shift);
+                shift = 0;
+                break;
+            }
             default:
                 break;
         }
     }
+
+    VmCommand command = { .op = OP_SET, .value = 0, .shift = shift - total_shift };
+    program_append(&program, command);
+
+    bitarray_deinit(zeros);
+    return program;
 }
 
 Program parse(char *source, size_t srclen, size_t *i, int *depth, bool interpret) {
@@ -89,7 +67,6 @@ Program parse(char *source, size_t srclen, size_t *i, int *depth, bool interpret
     uint16_t shift = 0;
     int16_t total_shift = 0;
     uint8_t base_value = 0;
-    size_t base_i = *i;
     bool poison = false;
     for(; *i < srclen; (*i)++) {
         char c = source[*i];
@@ -160,8 +137,9 @@ Program parse(char *source, size_t srclen, size_t *i, int *depth, bool interpret
             case ']': {
                 (*depth)--;
                 if(total_shift == 0 && !poison && (base_value & 1) == 1) {
+                    Program subprog = unroll(program, mod_inv(256 - (uint16_t)base_value));
                     program_deinit(program);
-                    return unroll(source, base_i, mod_inv(256 - (uint16_t)base_value));
+                    return subprog;
                 }
                 if(shift != 0 || program.commands[program.length - 1].op != OP_JRNZ) {
                     VmCommand command = {
