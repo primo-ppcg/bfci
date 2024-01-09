@@ -9,15 +9,15 @@
 #define bytecode_weight(command) (BYTECODE_WEIGHTS[command.op] + (command.shift != 0 ? 5 : 0))
 
 static const size_t BYTECODE_WEIGHTS[] = {
-    11, // OP_JRZ
-    10, // OP_JRNZ
-    4,  // OP_ADD
-    4,  // OP_SET
-    3,  // OP_CPY
-    6,  // OP_MUL
-    15, // OP_PUTC
-    15, // OP_GETC
-    9,  // OP_END
+    10, // OP_JRZ
+    9,  // OP_JRNZ
+    3,  // OP_ADD
+    3,  // OP_SET
+    2,  // OP_CPY
+    5,  // OP_MUL
+    6,  // OP_PUTC
+    6,  // OP_GETC
+    4,  // OP_END
 };
 
 typedef struct {

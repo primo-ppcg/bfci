@@ -32,80 +32,77 @@ ByteCode compile(Program program) {
     ByteCode bytecode = { .length = 0, .capacity = 256, .ops = malloc(256 * sizeof(uint8_t)) };
 
     emit(
-        /* push %rbx                */  0x53,
-        /* sub $65536, %rsp         */  0x48, 0x81, 0xEC, imm32(65536),
+        /* mov $65536, %ecx         */  0xB9, imm32(65536),
+        /* mov %rsp, %r10           */  0x49, 0x89, 0xE2,
+        /* sub %rcx, %rsp           */  0x48, 0x29, 0xCC,
         /* xor %eax, %eax           */  0x31, 0xC0,
-        /* xor %ebx, %ebx           */  0x31, 0xDB,
-        /* mov $8192, %ecx          */  0xB9, imm32(8192),
+        /* mov %rsp, %rsi           */  0x48, 0x89, 0xE6,
+        /* xorw %sp, %sp            */  0x66, 0x31, 0xE4,
+        /* mov $1, %edx             */  0xBA, imm32(1),
         /* mov %rsp, %rdi           */  0x48, 0x89, 0xE7,
-        /* rep stosq                */  0xF3, 0x48, 0xAB
+        /* rep stosb                */  0xF3, 0xAA
     )
 
     for(size_t i = 0; i < program.length; i++) {
         VmCommand command = program.commands[i];
         if(command.shift != 0) {
             emit(
-                /* addw imm16, %bx          */  0x66, 0x81, 0xC3, imm16(command.shift)
+                /* addw imm16, %si          */  0x66, 0x81, 0xC6, imm16(command.shift)
             )
         }
 
         switch(command.op) {
             case OP_JRZ:
                 emit(
-                    /* xor %edx, %edx           */  0x31, 0xD2,
-                    /* orb (%rsp,%rbx), %dl     */  0x0A, 0x14, 0x1C,
+                    /* xor %ecx, %ecx           */  0x31, 0xC9,
+                    /* orb (%rsi), %cl          */  0x0A, 0x0E,
                     /* jrz imm32                */  0x0F, 0x84, imm32(command.jump)
                 )
                 break;
             case OP_JRNZ:
                 emit(
-                    /* testb $255, (%rsp,%rbx)  */  0xF6, 0x04, 0x1C, 0xFF,
+                    /* testb $255, (%rsi)       */  0xF6, 0x06, 0xFF,
                     /* jrnz imm32               */  0x0F, 0x85, imm32(command.jump - bytecode_weight(command))
                 )
                 break;
             case OP_ADD:
                 emit(
-                    /* addb imm8, (%rsp,%rbx)   */  0x80, 0x04, 0x1C, imm8(command.value)
+                    /* addb imm8, (%rsi)        */  0x80, 0x06, imm8(command.value)
                 )
                 break;
             case OP_SET:
                 emit(
-                    /* movb imm8, (%rsp,%rbx)   */  0xC6, 0x04, 0x1C, imm8(command.value)
+                    /* movb imm8, (%rsi)        */  0xC6, 0x06, imm8(command.value)
                 )
                 break;
             case OP_CPY:
                 emit(
-                    /* addb %dl, (%rsp,%rbx)    */  0x00, 0x14, 0x1C
+                    /* addb %cl, (%rsi)         */  0x00, 0x0E
                 )
                 break;
             case OP_MUL:
                 emit(
-                    /* imulb imm8, %edx, %eax   */  0x6B, 0xC2, imm8(command.value),
-                    /* addb %al, (%rsp,%rbx)    */  0x00, 0x04, 0x1C
+                    /* imulb imm8, %ecx, %eax   */  0x6B, 0xC1, imm8(command.value),
+                    /* addb %al, (%rsi)         */  0x00, 0x06
                 )
                 break;
             case OP_PUTC:
                 emit(
-                    /* mov $1, %eax             */  0xB8, imm32(1),
-                    /* lea (%rsp,%rbx), %rsi    */  0x48, 0x8D, 0x34, 0x1C,
-                    /* mov %eax, %edi           */  0x89, 0xC7,
-                    /* mov %eax, %edx           */  0x89, 0xC2,
+                    /* mov %edx, %eax           */  0x89, 0xD0,
+                    /* mov %edx, %edi           */  0x89, 0xD7,
                     /* syscall                  */  0x0F, 0x05
                 )
                 break;
             case OP_GETC:
                 emit(
                     /* xor %eax, %eax           */  0x31, 0xC0,
-                    /* lea (%rsp,%rbx), %rsi    */  0x48, 0x8D, 0x34, 0x1C,
                     /* xor %edi, %edi           */  0x31, 0xFF,
-                    /* mov $1, %edx             */  0xBA, imm32(1),
                     /* syscall                  */  0x0F, 0x05
                 )
                 break;
             case OP_END:
                 emit(
-                    /* add $65536, %rsp         */  0x48, 0x81, 0xC4, imm32(65536),
-                    /* pop %rbx                 */  0x5B,
+                    /* mov %r10, %rsp           */  0x4C, 0x89, 0xD4,
                     /* ret                      */  0xC3
                 )
                 break;
