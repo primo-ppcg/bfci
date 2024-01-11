@@ -31,11 +31,3 @@ void program_append(Program *program, VmCommand command) {
     program->length++;
     program->weight += bytecode_weight(command);
 }
-
-void program_drop_first(Program *program) {
-    if(program->length > 0) {
-        program->length--;
-        program->weight -= bytecode_weight(program->commands[0]);
-        memmove(program->commands, &program->commands[1], program->length * sizeof(VmCommand));
-    }
-}

@@ -61,7 +61,7 @@ ByteCode compile(Program program) {
                 break;
             case OP_JRNZ:
                 emit(
-                    /* testb $255, (%rsi)       */  0xF6, 0x06, 0xFF,
+                    /* testb $255, (%rsi)       */  0xF6, 0x06, imm8(255),
                     /* jrnz imm32               */  0x0F, 0x85, imm32(command.jump - bytecode_weight(command))
                 )
                 break;
