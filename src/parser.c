@@ -118,6 +118,9 @@ Program parse(char *source, size_t srclen, size_t *i, int *depth, bool interpret
                         program_deinit(subprog);
                         return program;
                     }
+                    if(subprog.commands[0].shift == 0 && subprog.commands[0].op == OP_JRZ) {
+                        program_drop_first(&subprog);
+                    }
                     VmCommand command = {
                         .op = OP_JRZ,
                         .shift = shift,
@@ -138,12 +141,14 @@ Program parse(char *source, size_t srclen, size_t *i, int *depth, bool interpret
                     program_deinit(program);
                     return subprog;
                 }
-                VmCommand command = {
-                    .op = OP_JRNZ,
-                    .shift = shift,
-                    .jump = -(interpret ? program.length : program.weight)
-                };
-                program_append(&program, command);
+                if(shift != 0 || program.commands[program.length - 1].op != OP_JRNZ) {
+                    VmCommand command = {
+                        .op = OP_JRNZ,
+                        .shift = shift,
+                        .jump = -(interpret ? program.length : program.weight)
+                    };
+                    program_append(&program, command);
+                }
                 return program;
             }
             case '+':

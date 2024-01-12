@@ -16,3 +16,4 @@ void program_deinit(Program program);
 
 void program_concat(Program *program, Program subprog);
 void program_append(Program *program, VmCommand command);
+void program_drop_first(Program *program);
