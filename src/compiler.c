@@ -163,7 +163,9 @@ bool write_executable(ByteCode bytecode, char *path) {
     fwrite(bytecode.ops, sizeof(uint8_t), bytecode.length, fp);
     fclose(fp);
 
-    chmod(path, 0744);
+    if(chmod(path, 0744) != 0) {
+        return false;
+    }
 
     return true;
 }

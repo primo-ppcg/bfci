@@ -79,11 +79,9 @@ static bool parse_args(int argc, char *argv[], Arguments *args) {
             case 'h':
                 display_help(argv[0]);
                 return false;
-                break;
             case '?':
                 display_usage(argv[0]);
                 return false;
-                break;
         }
     }
 
