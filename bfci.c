@@ -163,11 +163,16 @@ int main(int argc, char *argv[]) {
             break;
         case EXECUTE: {
             ByteCode bytecode = compile(program);
-            off_t pagesize = sysconf(_SC_PAGESIZE);
-            void *pagestart = (void *)((off_t)bytecode.ops & ~(pagesize - 1));
-            off_t offset = (off_t)bytecode.ops - (off_t)pagestart;
-            mprotect(pagestart, offset + bytecode.length, PROT_READ | PROT_WRITE | PROT_EXEC);
-            ((void(*)(void))bytecode.ops)();
+            void *execmem = mmap(NULL, bytecode.length * sizeof(uint8_t), PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+            if(execmem == MAP_FAILED) {
+                bytecode_deinit(bytecode);
+                program_deinit(program);
+                perror("mmap");
+                return 1;
+            }
+            memcpy(execmem, bytecode.ops, bytecode.length * sizeof(uint8_t));
+            ((void(*)(void))execmem)();
+            munmap(execmem, bytecode.length * sizeof(uint8_t));
             bytecode_deinit(bytecode);
             break;
         }

@@ -3,7 +3,7 @@ A simple, small, moderately optimizing compiling interpreter for the [brainfuck]
 
 ### Compile
 ```
-cc --std=c99 -Wall -Wextra -O3 -s -o bfci bfci.c src/*.c
+cc -Wall -Wextra -O3 -s -o bfci bfci.c src/*.c
 ```
 ### Usage
 As a compiler:

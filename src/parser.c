@@ -71,13 +71,10 @@ Program parse(char *source, size_t srclen, size_t *i, int *depth, bool interpret
     for(; *i < srclen; (*i)++) {
         char c = source[*i];
         switch(c) {
-            case '>':
-                shift++;
-                total_shift++;
-                break;
             case '<':
-                shift--;
-                total_shift--;
+            case '>':
+                shift += c - 61;
+                total_shift += c - 61;
                 break;
             case '.': {
                 VmCommand command = { .op = OP_PUTC, .shift = shift };
