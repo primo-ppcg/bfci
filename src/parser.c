@@ -138,7 +138,7 @@ Program parse(char *source, size_t srclen, size_t *i, int *depth, bool interpret
                     program_deinit(program);
                     return subprog;
                 }
-                if(shift != 0 || program.commands[program.length - 1].op != OP_JRNZ) {
+                if(shift != 0 || program.length == 0 || program.commands[program.length - 1].op != OP_JRNZ) {
                     VmCommand command = {
                         .op = OP_JRNZ,
                         .shift = shift,
